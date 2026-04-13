@@ -1,0 +1,31 @@
+{
+  "data_path": "data\\phishing.csv",
+  "target_column": "class",
+  "feature_count": 30,
+  "label_mapping": {
+    "0": "phishing",
+    "1": "legitimate"
+  },
+  "test_size": 0.2,
+  "best_model": "random_forest",
+  "metrics": {
+    "logistic_regression": {
+      "accuracy": 0.939846223428313,
+      "precision": 0.9406575781876504,
+      "recall": 0.9521103896103896,
+      "f1": 0.9463493344090359
+    },
+    "decision_tree": {
+      "accuracy": 0.9434644957033017,
+      "precision": 0.9639564124057,
+      "recall": 0.9334415584415584,
+      "f1": 0.9484536082474226
+    },
+    "random_forest": {
+      "accuracy": 0.9665309814563546,
+      "precision": 0.9595238095238096,
+      "recall": 0.9813311688311688,
+      "f1": 0.9703049759229535
+    }
+  }
+}
