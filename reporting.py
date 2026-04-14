@@ -30,6 +30,11 @@ class ThreatReporter:
         self.reports_dir = Path(os.getenv("REPORTS_DIR", "outputs/reports"))
         self.reports_dir.mkdir(parents=True, exist_ok=True)
 
+        self.s3_bucket = os.getenv("REPORTS_S3_BUCKET", "")
+        self.s3_prefix = os.getenv("REPORTS_S3_PREFIX", "reports/")
+        self.s3_region = os.getenv("REPORTS_S3_REGION", "")
+        self.s3_presigned_expiry = int(os.getenv("REPORTS_S3_PRESIGNED_EXPIRY", "3600"))
+
     def report_detection(self, event: dict[str, Any]) -> dict[str, Any]:
         """Run all reporting steps; never raise so inference remains available."""
         status: dict[str, Any] = {
@@ -195,4 +200,47 @@ class ThreatReporter:
             self._pdf_write_multicell(pdf, "No feature details available.", 7)
 
         pdf.output(str(report_path))
-        return {"ok": True, "path": str(report_path)}
+        out: dict[str, Any] = {"ok": True, "path": str(report_path)}
+
+        if self.s3_bucket:
+            try:
+                s3_data = self._upload_pdf_to_s3(report_path)
+                out.update(s3_data)
+            except Exception as exc:
+                out["s3_upload_ok"] = False
+                out["s3_message"] = str(exc)
+
+        return out
+
+    def _upload_pdf_to_s3(self, report_path: Path) -> dict[str, Any]:
+        import boto3
+        from botocore.config import Config
+
+        region = self.s3_region or os.getenv("AWS_REGION", "") or os.getenv("AWS_DEFAULT_REGION", "")
+        s3_client = boto3.client(
+            "s3",
+            region_name=region if region else None,
+            config=Config(signature_version="s3v4", s3={"addressing_style": "virtual"}),
+        )
+
+        normalized_prefix = self.s3_prefix.strip()
+        if normalized_prefix and not normalized_prefix.endswith("/"):
+            normalized_prefix += "/"
+        key = f"{normalized_prefix}{report_path.name}"
+
+        s3_client.upload_file(str(report_path), self.s3_bucket, key, ExtraArgs={"ContentType": "application/pdf"})
+
+        presigned_url = s3_client.generate_presigned_url(
+            "get_object",
+            Params={"Bucket": self.s3_bucket, "Key": key},
+            ExpiresIn=self.s3_presigned_expiry,
+        )
+
+        return {
+            "s3_upload_ok": True,
+            "s3_bucket": self.s3_bucket,
+            "s3_key": key,
+            "s3_uri": f"s3://{self.s3_bucket}/{key}",
+            "download_url": presigned_url,
+            "download_url_expires_in_seconds": self.s3_presigned_expiry,
+        }

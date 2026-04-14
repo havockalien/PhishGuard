@@ -160,7 +160,11 @@ $smtpCredential = New-Object System.Management.Automation.PSCredential("your_ema
 	-SmtpFrom your_email@example.com `
 	-SmtpTo security-team@example.com `
 	-SmtpUseStarttls true `
-	-ReportsDir /tmp/reports
+	-ReportsDir /tmp/reports `
+	-ReportsS3Bucket your-s3-bucket-name `
+	-ReportsS3Prefix reports/ `
+	-ReportsS3Region ap-south-1 `
+	-ReportsS3PresignedExpiry 3600
 ```
 
 Optional flags:
@@ -175,11 +179,15 @@ Optional flags:
 - `-SmtpHost smtp.gmail.com`
 - `-SmtpPort 587`
 - `-SmtpUser <email>`
-- `-SmtpPassword <app-password>`
+- `-SmtpCredential <PSCredential>`
 - `-SmtpFrom <email>`
 - `-SmtpTo <recipient1,recipient2>`
 - `-SmtpUseStarttls true`
 - `-ReportsDir /tmp/reports`
+- `-ReportsS3Bucket <bucket-name>`
+- `-ReportsS3Prefix reports/`
+- `-ReportsS3Region ap-south-1`
+- `-ReportsS3PresignedExpiry 3600`
 
 Manual Lambda image build only:
 
@@ -195,6 +203,7 @@ When a phishing URL is detected (`label = phishing`), the API now:
 - logs event to MongoDB Atlas
 - sends email alert via `smtplib`
 - generates a PDF report via `fpdf2`
+- optionally uploads PDF to S3 and returns a temporary download URL
 
 Configure environment variables before running the API:
 
@@ -215,6 +224,12 @@ set SMTP_USE_STARTTLS=true
 
 # Optional PDF output directory
 set REPORTS_DIR=outputs/reports
+
+# Optional S3 report upload (recommended for Lambda/cloud)
+set REPORTS_S3_BUCKET=your-s3-bucket-name
+set REPORTS_S3_PREFIX=reports/
+set REPORTS_S3_REGION=ap-south-1
+set REPORTS_S3_PRESIGNED_EXPIRY=3600
 
 # Optional TLS debug flag for MongoDB Atlas connectivity issues
 # (Use only for debugging in restricted networks, keep false in production)

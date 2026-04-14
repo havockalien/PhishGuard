@@ -27,7 +27,11 @@ param(
     [string]$SmtpTo = "",
     [string]$SmtpUseStarttls = "true",
 
-    [string]$ReportsDir = "/tmp/reports"
+    [string]$ReportsDir = "/tmp/reports",
+    [string]$ReportsS3Bucket = "",
+    [string]$ReportsS3Prefix = "reports/",
+    [string]$ReportsS3Region = "",
+    [string]$ReportsS3PresignedExpiry = "3600"
 )
 
 $ErrorActionPreference = "Continue"
@@ -95,6 +99,10 @@ function Get-LambdaEnvironmentFile {
         SMTP_TO = $SmtpTo
         SMTP_USE_STARTTLS = $SmtpUseStarttls
         REPORTS_DIR = $ReportsDir
+        REPORTS_S3_BUCKET = $ReportsS3Bucket
+        REPORTS_S3_PREFIX = $ReportsS3Prefix
+        REPORTS_S3_REGION = $ReportsS3Region
+        REPORTS_S3_PRESIGNED_EXPIRY = $ReportsS3PresignedExpiry
     }
 
     $envPayload = @{

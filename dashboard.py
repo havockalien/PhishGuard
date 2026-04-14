@@ -65,7 +65,15 @@ def list_reports() -> list[Path]:
     return sorted(reports_dir.glob("*.pdf"), reverse=True)
 
 
-def render_report_download(report_path: str) -> None:
+def render_report_download(report_path: str | None = None, download_url: str | None = None) -> None:
+    if download_url:
+        st.link_button("Open PDF report", download_url)
+        return
+
+    if not report_path:
+        st.info("PDF metadata is present, but no local or remote report link was provided.")
+        return
+
     path = Path(report_path)
     if not path.exists():
         st.info("PDF report path was returned, but file is not available on this machine.")
@@ -200,8 +208,14 @@ def render_end_user_scanner(api_base_url: str, api_key: str) -> None:
                     )
 
                 pdf_path = str(threat_reporting.get("pdf", {}).get("path", "") or "")
-                if pdf_path:
-                    render_report_download(pdf_path)
+                pdf_url = str(threat_reporting.get("pdf", {}).get("download_url", "") or "")
+                s3_uploaded = bool(threat_reporting.get("pdf", {}).get("s3_upload_ok", False))
+                if s3_uploaded:
+                    st.success("S3 uploaded: true")
+                if pdf_url:
+                    st.success("Report link ready")
+                if pdf_path or pdf_url:
+                    render_report_download(report_path=pdf_path if pdf_path else None, download_url=pdf_url if pdf_url else None)
         except requests.Timeout:
             st.error(
                 "Could not reach scanner API within timeout. "
